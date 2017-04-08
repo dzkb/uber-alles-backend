@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import request
+import decorators.flask_decorators as decorators
 import requests
 from config.config import Firebase as Firebase_config
 from firebase import Firebase
@@ -26,3 +27,14 @@ def handle_accepted_fares_id(fare_id):
 @app.route('/acceptedFares', methods=['GET'])
 def handle_accepted_fares():
     return "accepted_fares"
+
+@app.route('/test/messaging', methods=['GET'])
+@decorators.content_type(type="application/json")
+def handle_test_messaging():
+    to_device = request.args.get('to')
+    notification = request.args.get('notification')
+
+    headers = {"Content-type": "application/json", "Authorization": "key=" + Firebase_config.SERVER_KEY}
+    payload = {"to": to_device, "notification": {"title": "Powiadomienie", "body": notification}}
+    message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
+    return message_request.content
