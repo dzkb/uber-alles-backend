@@ -156,4 +156,7 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# custom
+tmp/
+
 # End of https://www.gitignore.io/api/python,pycharm
