@@ -18,7 +18,7 @@ def add_response_headers(headers={}):
 def content_type(type="text/html"):
     def decorator(f):
         @wraps(f)
-        @add_response_headers({'Content-Type': 'application/json'})
+        @add_response_headers({'Content-Type': type})
         def decorated_function(*args, **kwargs):
             return f(*args, **kwargs)
         return decorated_function
