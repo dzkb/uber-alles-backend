@@ -17,8 +17,6 @@ firebase_db = firebase.database()
 # @decorators.content_type(type="application/json")
 def hello_world():
     return str(request.authorization)
-    return str(firebase_auth.sign_in_with_email_and_password("608132320@dzakub.com", "123456"))
-    # return firebase_auth.create_user_with_email_and_password("608132320@dzakub.com", "123456")
 
 
 @app.route('/fares/<fare_id>', methods=['DELETE'])
@@ -67,8 +65,9 @@ def handler_users():
         firebase_response = firebase_auth.create_user_with_email_and_password(
             str(userdata["phoneNumber"]) + "@dzakub.com",
             userdata["password"])
-    except:
-        response = Response(json.dumps({"error" : "Invalid data or user already exists"}), status=400)
+    except requests.RequestException as e:
+        firebase_error_response = json.dumps({"error" : json.loads(e.args[1])["error"]["message"]})
+        response = Response(firebase_error_response, status=400)
         return response
 
     userToken = firebase_response["idToken"]
@@ -77,4 +76,4 @@ def handler_users():
     del userdata["password"]
     firebase_db.child("users").child(userdata["phoneNumber"]).set(userdata, userToken)
 
-    return str(firebase_response)
+    return json.dumps(userdata)
