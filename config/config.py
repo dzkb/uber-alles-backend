@@ -6,3 +6,4 @@ class Firebase:
       "databaseURL": "https://uberalles-9f3dd.firebaseio.com",
       "storageBucket": "uberalles-9f3dd.appspot.com"
     }
+    USER_DOMAIN = "@dzakub.com"

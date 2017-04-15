@@ -4,7 +4,7 @@ from flask import Response
 import decorators.flask_decorators as decorators
 import requests
 from config.config import Firebase as Firebase_config
-from firebase import Firebase
+from config.responses import Responses
 import json
 import pyrebase
 
@@ -28,18 +28,46 @@ def handle_fares_id(fare_id):
 @app.route('/fares', methods=['GET', 'POST'])
 @decorators.content_type(type="application/json")
 def handle_fares():
-    return "fares"
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if userToken is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
+    if request.method == "GET":
+        return json.dumps({"error" : "Not implemented"})
+    elif request.method == "POST":
+
+        return ""
 
 
 @app.route('/acceptedFares/<fare_id>', methods=['POST', 'DELETE'])
 @decorators.content_type(type="application/json")
 def handle_accepted_fares_id(fare_id):
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if userToken is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
     return "accepted_fares: " + fare_id
 
 
 @app.route('/acceptedFares', methods=['GET'])
 @decorators.content_type(type="application/json")
 def handle_accepted_fares():
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if userToken is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
     return "accepted_fares"
 
 
@@ -63,7 +91,7 @@ def handler_users():
     userToken = None
     try:
         firebase_response = firebase_auth.create_user_with_email_and_password(
-            str(userdata["phoneNumber"]) + "@dzakub.com",
+            str(userdata["phoneNumber"]) + Firebase_config.USER_DOMAIN,
             userdata["password"])
     except requests.RequestException as e:
         firebase_error_response = json.dumps({"error" : json.loads(e.args[1])["error"]["message"]})
@@ -77,3 +105,10 @@ def handler_users():
     firebase_db.child("users").child(userdata["phoneNumber"]).set(userdata, userToken)
 
     return json.dumps(userdata)
+
+def authenticate(username, password):
+    try:
+        firebase_response = firebase_auth.sign_in_with_email_and_password(username, password)
+        return firebase_response["idToken"]
+    except requests.RequestException as e:
+        return None
