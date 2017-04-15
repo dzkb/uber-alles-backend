@@ -82,29 +82,44 @@ def handle_test_messaging():
     message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
     return message_request.content
 
-@app.route('/users', methods=['POST'])
+@app.route('/users', methods=['POST', 'GET'])
 @decorators.content_type(type="application/json")
 def handler_users():
-    userdata = request.get_json()
-    assert userdata["phoneNumber"] is not None
+    if request.method == 'POST':
+        userdata = request.get_json()
+        assert userdata["phoneNumber"] is not None
 
-    userToken = None
-    try:
-        firebase_response = firebase_auth.create_user_with_email_and_password(
-            str(userdata["phoneNumber"]) + Firebase_config.USER_DOMAIN,
-            userdata["password"])
-    except requests.RequestException as e:
-        firebase_error_response = json.dumps({"error" : json.loads(e.args[1])["error"]["message"]})
-        response = Response(firebase_error_response, status=400)
-        return response
+        userToken = None
+        try:
+            firebase_response = firebase_auth.create_user_with_email_and_password(
+                str(userdata["phoneNumber"]) + Firebase_config.USER_DOMAIN,
+                userdata["password"])
+        except requests.RequestException as e:
+            firebase_error_response = json.dumps({"error" : json.loads(e.args[1])["error"]["message"]})
+            response = Response(firebase_error_response, status=400)
+            return response
 
-    userToken = firebase_response["idToken"]
-    assert userToken is not None
+        userToken = firebase_response["idToken"]
+        assert userToken is not None
 
-    del userdata["password"]
-    firebase_db.child("users").child(userdata["phoneNumber"]).set(userdata, userToken)
+        del userdata["password"]
+        firebase_db.child("users").child(userdata["phoneNumber"]).set(userdata, userToken)
 
-    return json.dumps(userdata)
+        return json.dumps(userdata)
+    else:
+        if request.authorization is None:
+            return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+        userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                                 request.authorization.password)
+        if userToken is None:
+            return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
+        username = request.authorization.username
+        user = firebase_db.child("users").child(username).get(userToken).val()
+        return json.dumps(user)
+
+
 
 def authenticate(username, password):
     try:
