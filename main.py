@@ -3,10 +3,12 @@ from flask import request
 from flask import Response
 import decorators.flask_decorators as decorators
 import requests
-from config.config import Firebase as Firebase_config
-from config.responses import Responses
 import json
 import pyrebase
+import pytz
+from datetime import datetime
+from config.config import Firebase as Firebase_config
+from config.responses import Responses
 
 app = Flask(__name__)
 firebase = pyrebase.initialize_app(Firebase_config.CONFIG)
@@ -31,16 +33,29 @@ def handle_fares():
     if request.authorization is None:
         return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
 
-    userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
                              request.authorization.password)
-    if userToken is None:
+    if user_token is None:
         return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
-    if request.method == "GET":
-        return json.dumps({"error" : "Not implemented"})
-    elif request.method == "POST":
+    user_phone = request.authorization.username
 
-        return ""
+    if request.method == "GET":
+        return json.dumps({"error": "Not implemented"})
+    elif request.method == "POST":
+        fare_data = request.get_json()
+        datetime_now = localize_datetime(datetime.now())
+        datetime_now_iso = datetime_now.isoformat()
+
+        fare_data["status"] = "placed"
+        fare_data["clientPhone"] = user_phone
+        fare_data["placedDate"] = datetime_now_iso
+
+        pushed_data = firebase_db.child("fares").push(fare_data, user_token)
+
+        response_data = {"id": pushed_data["name"], "requestDate": datetime_now_iso}
+
+        return json.dumps(response_data)
 
 
 @app.route('/acceptedFares/<fare_id>', methods=['POST', 'DELETE'])
@@ -82,6 +97,7 @@ def handle_test_messaging():
     message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
     return message_request.content
 
+
 @app.route('/users', methods=['POST', 'GET'])
 @decorators.content_type(type="application/json")
 def handler_users():
@@ -89,36 +105,35 @@ def handler_users():
         userdata = request.get_json()
         assert userdata["phoneNumber"] is not None
 
-        userToken = None
+        user_token = None
         try:
             firebase_response = firebase_auth.create_user_with_email_and_password(
                 str(userdata["phoneNumber"]) + Firebase_config.USER_DOMAIN,
                 userdata["password"])
         except requests.RequestException as e:
-            firebase_error_response = json.dumps({"error" : json.loads(e.args[1])["error"]["message"]})
+            firebase_error_response = json.dumps({"error": json.loads(e.args[1])["error"]["message"]})
             response = Response(firebase_error_response, status=400)
             return response
 
-        userToken = firebase_response["idToken"]
-        assert userToken is not None
+        user_token = firebase_response["idToken"]
+        assert user_token is not None
 
         del userdata["password"]
-        firebase_db.child("users").child(userdata["phoneNumber"]).set(userdata, userToken)
+        firebase_db.child("users").child(userdata["phoneNumber"]).set(userdata, user_token)
 
         return json.dumps(userdata)
     else:
         if request.authorization is None:
             return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
 
-        userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+        user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
                                  request.authorization.password)
-        if userToken is None:
+        if user_token is None:
             return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
         username = request.authorization.username
-        user = firebase_db.child("users").child(username).get(userToken).val()
+        user = firebase_db.child("users").child(username).get(user_token).val()
         return json.dumps(user)
-
 
 
 def authenticate(username, password):
@@ -127,3 +142,10 @@ def authenticate(username, password):
         return firebase_response["idToken"]
     except requests.RequestException as e:
         return None
+
+
+def localize_datetime(dt):
+    dt = dt.replace(microsecond=0)
+    timezone = pytz.timezone(Firebase_config.TIMEZONE)
+
+    return timezone.localize(dt)

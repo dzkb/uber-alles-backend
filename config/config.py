@@ -7,3 +7,4 @@ class Firebase:
       "storageBucket": "uberalles-9f3dd.appspot.com"
     }
     USER_DOMAIN = "@dzakub.com"
+    TIMEZONE = "Europe/Warsaw"
