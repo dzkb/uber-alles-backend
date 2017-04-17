@@ -15,10 +15,13 @@ firebase = pyrebase.initialize_app(Firebase_config.CONFIG)
 firebase_auth = firebase.auth()
 firebase_db = firebase.database()
 
+swagger_uri = "https://app.swaggerhub.com/apis/dzkb/UberAlles-backend/1.0.0"
+
+
 @app.route('/', methods=['GET', 'POST'])
 # @decorators.content_type(type="application/json")
 def hello_world():
-    return str(request.authorization)
+    return Response(status=303, headers={"Location": swagger_uri})
 
 
 @app.route('/fares/<fare_id>', methods=['DELETE'])
