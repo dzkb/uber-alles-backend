@@ -50,6 +50,7 @@ def handle_fares():
         fare_data["status"] = "placed"
         fare_data["clientPhone"] = user_phone
         fare_data["placedDate"] = datetime_now_iso
+        fare_data["driverPhone"] = ""
 
         pushed_data = firebase_db.child("fares").push(fare_data, user_token)
 
