@@ -24,7 +24,27 @@ def hello_world():
 @app.route('/fares/<fare_id>', methods=['DELETE'])
 @decorators.content_type(type="application/json")
 def handle_fares_id(fare_id):
-    return "to_delete: " + fare_id
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if user_token is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
+    user_phone = request.authorization.username
+
+    fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+
+    if fare_data is None:
+        return Response(json.dumps({"error": Responses.FARE_NOT_FOUND}), status=404)
+    if fare_data["clientPhone"] != user_phone:
+        return Response(json.dumps({"error": Responses.AUTH_NOT_PERMITTED}), status=401)
+
+    fare_data["status"] = "cancelled"
+    firebase_db.child("fares").child(fare_id).set(fare_data, user_token)
+
+    return json.dumps(fare_data)
 
 
 @app.route('/fares', methods=['GET', 'POST'])
