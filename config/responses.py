@@ -3,3 +3,4 @@ class Responses:
     AUTH_REQUIRED = "This action requires authorization"
     FARE_NOT_FOUND = "Fare could not be found"
     AUTH_NOT_PERMITTED = "This action is not permitted"
+    FARE_ALREADY_CANCELLED = "Fare is already cancelled"

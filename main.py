@@ -43,6 +43,8 @@ def handle_fares_id(fare_id):
         return Response(json.dumps({"error": Responses.FARE_NOT_FOUND}), status=404)
     if fare_data["clientPhone"] != user_phone:
         return Response(json.dumps({"error": Responses.AUTH_NOT_PERMITTED}), status=401)
+    if fare_data["status"] == "cancelled":
+        return Response(json.dumps({"error": Responses.FARE_ALREADY_CANCELLED}), status=400)
 
     fare_data["status"] = "cancelled"
     firebase_db.child("fares").child(fare_id).set(fare_data, user_token)
