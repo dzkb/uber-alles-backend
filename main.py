@@ -66,7 +66,9 @@ def handle_fares():
     user_phone = request.authorization.username
 
     if request.method == "GET":
-        return json.dumps({"error": "Not implemented"})
+        fare_data = firebase_db.child("fares").get(user_token).val()
+        return json.dumps(fare_data)
+
     elif request.method == "POST":
         fare_data = request.get_json()
         datetime_now = localize_datetime(datetime.now())
@@ -90,9 +92,9 @@ def handle_accepted_fares_id(fare_id):
     if request.authorization is None:
         return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
 
-    userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
                              request.authorization.password)
-    if userToken is None:
+    if user_token is None:
         return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
     return "accepted_fares: " + fare_id
@@ -104,12 +106,24 @@ def handle_accepted_fares():
     if request.authorization is None:
         return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
 
-    userToken = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
                              request.authorization.password)
-    if userToken is None:
+    if user_token is None:
         return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
-    return "accepted_fares"
+    user_phone = request.authorization.username
+    try:
+        fare_data = firebase_db.child("fares")\
+            .order_by_child("driverPhone").equal_to(user_phone)\
+            .order_by_child("status").equal_to("in_progress")\
+            .get(user_token).val()
+    except:
+        return  json.dumps({})
+
+    return json.dumps(fare_data)
+        #
+
+    # return json.dumps(fare_data)
 
 
 @app.route('/test/messaging', methods=['GET'])
