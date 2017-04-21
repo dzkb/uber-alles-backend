@@ -6,6 +6,8 @@ import requests
 import json
 import pyrebase
 import pytz
+from pyfcm import FCMNotification
+from uberlogic import messaging
 from datetime import datetime
 from config.config import Firebase as Firebase_config
 from config.responses import Responses
@@ -14,6 +16,7 @@ app = Flask(__name__)
 firebase = pyrebase.initialize_app(Firebase_config.CONFIG)
 firebase_auth = firebase.auth()
 firebase_db = firebase.database()
+firebase_messaging = FCMNotification(api_key=Firebase_config.SERVER_KEY)
 
 swagger_uri = "https://app.swaggerhub.com/apis/dzkb/UberAlles-backend/1.0.0"
 
@@ -97,6 +100,24 @@ def handle_accepted_fares_id(fare_id):
     if user_token is None:
         return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
+    username = request.authorization.username
+    if request.method == "POST":
+        fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+
+        if fare_data is None:
+            return Response(json.dumps({"error": Responses.FARE_NOT_FOUND}), status=404)
+        if fare_data["status"] == "in_progress":
+            return Response(json.dumps({"error": Responses.FARE_ALREADY_IN_PROGRESS}), status=400)
+
+        payload = {"driverPhone": username, "status": "in_progress"}
+
+        firebase_db.child("fares").child(fare_id).update(payload, user_token)
+
+        fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+        return json.dumps(fare_data)
+    elif request.method == "DELETE":
+        pass
+
     return "accepted_fares: " + fare_id
 
 
@@ -136,6 +157,24 @@ def handle_test_messaging():
     payload = {"to": to_device, "notification": {"title": "Powiadomienie", "body": notification}}
     message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
     return message_request.content
+
+
+@app.route('/localisation', methods=['PUT'])
+@decorators.content_type(type="application/json")
+def handle_localisation():
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if user_token is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
+    user_phone = request.authorization.username
+    localisation_data = request.get_json()
+
+    firebase_db.child("localisations").child(user_phone).set(localisation_data, token=user_token)
+    return json.dumps(localisation_data)
 
 
 @app.route('/users', methods=['POST', 'GET'])
