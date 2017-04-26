@@ -6,6 +6,7 @@ import requests
 import json
 import pyrebase
 import pytz
+import time
 from pyfcm import FCMNotification
 from uberlogic import messaging
 from datetime import datetime
@@ -172,6 +173,7 @@ def handle_localisation():
 
     user_phone = request.authorization.username
     localisation_data = request.get_json()
+    localisation_data["timestamp"] = int(time.time())
 
     firebase_db.child("localisations").child(user_phone).set(localisation_data, token=user_token)
     return json.dumps(localisation_data)
