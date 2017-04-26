@@ -17,10 +17,9 @@ app = Flask(__name__)
 firebase = pyrebase.initialize_app(Firebase_config.CONFIG)
 firebase_auth = firebase.auth()
 firebase_db = firebase.database()
-firebase_messaging = FCMNotification(api_key=Firebase_config.SERVER_KEY)
+firebase_messaging_service = FCMNotification(api_key=Firebase_config.SERVER_KEY)
 
 swagger_uri = "https://app.swaggerhub.com/apis/dzkb/UberAlles-backend/1.0.0"
-
 
 @app.route('/', methods=['GET', 'POST'])
 # @decorators.content_type(type="application/json")
@@ -171,9 +170,12 @@ def handle_localisation():
     if user_token is None:
         return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
+    firebase_messaging = messaging.UberMessaging(firebase_messaging_service, firebase_db, user_token)
+
     user_phone = request.authorization.username
     localisation_data = request.get_json()
     localisation_data["timestamp"] = int(time.time())
+    localisation_data["registrationToken"] = firebase_messaging.resolve_registration_id(user_phone)
 
     firebase_db.child("localisations").child(user_phone).set(localisation_data, token=user_token)
     return json.dumps(localisation_data)
