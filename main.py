@@ -73,6 +73,7 @@ def handle_fares():
         return json.dumps(fare_data)
 
     elif request.method == "POST":
+        firebase_messaging = messaging.UberMessaging(firebase_messaging_service, firebase_db, user_token)
         fare_data = request.get_json()
         datetime_now = localize_datetime(datetime.now())
         datetime_now_iso = datetime_now.isoformat()
@@ -84,6 +85,20 @@ def handle_fares():
 
         pushed_data = firebase_db.child("fares").push(fare_data, user_token)
 
+        try:
+            drivers_locs = firebase_db.child("localisations")\
+                .order_by_child("timestamp")\
+                .start_at(time.time() - 90)\
+                .get(token=user_token).val()
+        except IndexError:
+            return Response(json.dumps({"error": Responses.NO_DRIVERS}), status=400)
+
+        drivers_tokens = [x["registrationToken"] for x in list(drivers_locs.values())]
+        payload = {"clientPhone": user_phone,
+                   "startingPoint": fare_data["startingPoint"],
+                   "endingPoint": fare_data["endingPoint"],
+                   "startingDate": fare_data["startingDate"]}
+        firebase_messaging.send_to_many(drivers_tokens, payload)
         response_data = {"id": pushed_data["name"], "requestDate": datetime_now_iso}
 
         return json.dumps(response_data)

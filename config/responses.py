@@ -6,3 +6,4 @@ class Responses:
     FARE_ALREADY_CANCELLED = "Przejazd został już anulowany"
     FARE_ALREADY_IN_PROGRESS = "Przejazd jest już w trakcie realizacji"
     INPUT_INCORRECT = "Podano niepoprawne dane"
+    NO_DRIVERS = "Nie znaleziono kierowcy, który mógłby wykonać przejazd"
