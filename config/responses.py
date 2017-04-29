@@ -5,5 +5,6 @@ class Responses:
     AUTH_NOT_PERMITTED = "Nieautoryzowana operacja"
     FARE_ALREADY_CANCELLED = "Przejazd został już anulowany"
     FARE_ALREADY_IN_PROGRESS = "Przejazd jest już w trakcie realizacji"
+    FARE_CANNOT_CANCEL = "Przejazd nie może być anulowany"
     INPUT_INCORRECT = "Podano niepoprawne dane"
     NO_DRIVERS = "Nie znaleziono kierowcy, który mógłby wykonać przejazd"

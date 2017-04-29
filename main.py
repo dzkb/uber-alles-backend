@@ -7,10 +7,12 @@ import json
 import pyrebase
 import pytz
 import time
+import utils.math_tools
 from pyfcm import FCMNotification
-from uberlogic import messaging
+from uberlogic import messaging, GoogleDistanceMatrix
 from datetime import datetime
 from config.config import Firebase as Firebase_config
+from config.config import Google
 from config.responses import Responses
 
 app = Flask(__name__)
@@ -18,6 +20,7 @@ firebase = pyrebase.initialize_app(Firebase_config.CONFIG)
 firebase_auth = firebase.auth()
 firebase_db = firebase.database()
 firebase_messaging_service = FCMNotification(api_key=Firebase_config.SERVER_KEY)
+google_distance_service = GoogleDistanceMatrix.DistanceMatrix(Google.MAPS_API)
 
 swagger_uri = "https://app.swaggerhub.com/apis/dzkb/UberAlles-backend/1.0.0"
 
@@ -118,11 +121,12 @@ def handle_accepted_fares_id(fare_id):
         return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
     username = request.authorization.username
-    if request.method == "POST":
-        fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
 
-        if fare_data is None:
-            return Response(json.dumps({"error": Responses.FARE_NOT_FOUND}), status=404)
+    fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+    if fare_data is None:
+        return Response(json.dumps({"error": Responses.FARE_NOT_FOUND}), status=404)
+
+    if request.method == "POST":
         if fare_data["status"] == "in_progress":
             return Response(json.dumps({"error": Responses.FARE_ALREADY_IN_PROGRESS}), status=400)
 
@@ -133,7 +137,14 @@ def handle_accepted_fares_id(fare_id):
         fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
         return json.dumps(fare_data)
     elif request.method == "DELETE":
-        pass
+        if fare_data["status"] != "in_progress":
+            return Response(json.dumps({"error": Responses.FARE_CANNOT_CANCEL}), status=400)
+
+        payload = {"status": "cancelled"}
+        firebase_db.child("fares").child(fare_id).update(payload, user_token)
+
+        fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+        return json.dumps(fare_data)
 
     return "accepted_fares: " + fare_id
 
@@ -155,13 +166,16 @@ def handle_accepted_fares():
             .order_by_child("driverPhone").equal_to(user_phone)\
             .order_by_child("status").equal_to("in_progress")\
             .get(user_token).val()
-    except:
-        return  json.dumps({})
+    except IndexError:
+        return json.dumps({})
 
     return json.dumps(fare_data)
-        #
 
-    # return json.dumps(fare_data)
+
+@app.route('/completedFares/<fare_id>', methods=['POST'])
+@decorators.content_type(type="application/json")
+def handle_completed_fares(fare_id):
+    return
 
 
 @app.route('/test/messaging', methods=['GET'])
@@ -175,6 +189,7 @@ def handle_test_messaging():
     message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
     return message_request.content
 
+
 @app.route('/test/data/<device_id>', methods=['POST'])
 @decorators.content_type(type="application/json")
 def handle_test_data_messaging(device_id):
@@ -184,6 +199,7 @@ def handle_test_data_messaging(device_id):
     payload = {"to": device_id, "data": data}
     message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
     return message_request.content
+
 
 @app.route('/localisation', methods=['PUT'])
 @decorators.content_type(type="application/json")

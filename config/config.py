@@ -8,3 +8,6 @@ class Firebase:
     }
     USER_DOMAIN = "@dzakub.com"
     TIMEZONE = "Europe/Warsaw"
+
+class Google:
+    MAPS_API = 'AIzaSyAxoR1L4Sg3Y8p8Nf9IRuZkBOjIU7J2v0k'
