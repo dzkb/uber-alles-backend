@@ -84,6 +84,7 @@ def handle_fares():
         fare_data["driverPhone"] = ""
 
         pushed_data = firebase_db.child("fares").push(fare_data, user_token)
+        fare_id = pushed_data["name"]
 
         try:
             drivers_locs = firebase_db.child("localisations")\
@@ -94,7 +95,8 @@ def handle_fares():
             return Response(json.dumps({"error": Responses.NO_DRIVERS}), status=400)
 
         drivers_tokens = [x["registrationToken"] for x in list(drivers_locs.values())]
-        payload = {"clientPhone": user_phone,
+        payload = {"fareID": fare_id,
+                   "clientPhone": user_phone,
                    "startingPoint": fare_data["startingPoint"],
                    "endingPoint": fare_data["endingPoint"],
                    "startingDate": fare_data["startingDate"]}
@@ -173,6 +175,15 @@ def handle_test_messaging():
     message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
     return message_request.content
 
+@app.route('/test/data/<device_id>', methods=['POST'])
+@decorators.content_type(type="application/json")
+def handle_test_data_messaging(device_id):
+    data = request.get_json()
+
+    headers = {"Content-type": "application/json", "Authorization": "key=" + Firebase_config.SERVER_KEY}
+    payload = {"to": device_id, "data": data}
+    message_request = requests.post('https://fcm.googleapis.com/fcm/send', headers=headers, data=json.dumps(payload))
+    return message_request.content
 
 @app.route('/localisation', methods=['PUT'])
 @decorators.content_type(type="application/json")

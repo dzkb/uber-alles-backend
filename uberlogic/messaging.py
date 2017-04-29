@@ -11,7 +11,7 @@ class UberMessaging:
         return result
 
     def send_to_many(self, recipient_ids, payload):
-        result = self.fcm.notify_multiple_devices(registration_ids=recipient_ids, data_message=payload)
+        result = self.fcm.notify_multiple_devices(registration_ids=recipient_ids, data_message=payload, message_body=payload)
         return result
 
     def resolve_registration_id(self, phone_number):
