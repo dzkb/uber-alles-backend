@@ -22,15 +22,15 @@ class DistanceMatrix:
         origin_addresses = response["origin_addresses"]
 
         result_distances = list()
-
         for i in range(len(response["rows"])):
             row_elements = response["rows"][i]["elements"]
             for j in range(len(row_elements)):
-                distance_item = dict()
-                distance_item["origin"] = origin_addresses[i]
-                distance_item["destination"] = destination_addresses[j]
-                distance_item["distance"] = response["rows"][i]["elements"][j]["distance"]
-                distance_item["duration"] = response["rows"][i]["elements"][j]["duration"]
-                result_distances.append(distance_item)
+                if (row_elements[j]["status"] != "ZERO_RESULTS"):
+                    distance_item = dict()
+                    distance_item["origin"] = origin_addresses[i]
+                    distance_item["destination"] = destination_addresses[j]
+                    distance_item["distance"] = response["rows"][i]["elements"][j]["distance"]
+                    distance_item["duration"] = response["rows"][i]["elements"][j]["duration"]
+                    result_distances.append(distance_item)
 
         return result_distances

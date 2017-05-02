@@ -8,3 +8,4 @@ class Responses:
     FARE_CANNOT_CANCEL = "Przejazd nie może być anulowany"
     INPUT_INCORRECT = "Podano niepoprawne dane"
     NO_DRIVERS = "Nie znaleziono kierowcy, który mógłby wykonać przejazd"
+    NO_ETAS = "Nie można oszacować czasu przyjazdu"

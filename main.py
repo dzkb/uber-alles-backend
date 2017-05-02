@@ -7,7 +7,7 @@ import json
 import pyrebase
 import pytz
 import time
-import utils.math_tools
+import utils.math_tools as math_tools
 from pyfcm import FCMNotification
 from uberlogic import messaging, GoogleDistanceMatrix
 from datetime import datetime
@@ -56,6 +56,54 @@ def handle_fares_id(fare_id):
     firebase_db.child("fares").child(fare_id).set(fare_data, user_token)
 
     return json.dumps(fare_data)
+
+
+@app.route('/arrivalTimes', methods=['GET'])
+@decorators.content_type(type="application/json")
+def handle_arrival_times():
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if user_token is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
+    customer_latitude = request.args.get('lat')
+    customer_longitude = request.args.get('lon')
+    distance_matrix = GoogleDistanceMatrix.DistanceMatrix(Google.MAPS_API)
+
+    try:
+        drivers_locs = firebase_db.child("localisations")\
+            .order_by_child("timestamp")\
+            .start_at(time.time() - 90)\
+            .get(token=user_token).val()
+    except IndexError:
+        return Response(json.dumps({"error": Responses.NO_DRIVERS}), status=400)
+
+    for key in drivers_locs:
+        driver_latitude = drivers_locs[key]["latitude"]
+        driver_longitude = drivers_locs[key]["longitude"]
+        distance_estimation = math_tools.distance2d(float(customer_latitude),
+                                                    float(customer_longitude),
+                                                    float(driver_latitude),
+                                                    float(driver_longitude))
+        drivers_locs[key]["distance_estimation"] = distance_estimation
+
+    n = 5
+    closest_n_drivers = sorted(drivers_locs.items(), key=lambda item: item[1]["distance_estimation"])[:n]
+    destinations = [str(x[1]["latitude"]) + "," + str(x[1]["longitude"]) for x in closest_n_drivers]
+    origins = [str(customer_latitude) + "," + str(customer_longitude)]
+    distances = distance_matrix.get_distances(origins, destinations)
+
+    if len(distances) == 0:
+        return Response(json.dumps({"error": Responses.NO_ETAS}), status=400)
+
+    etas_in_seconds = [route["duration"]["value"] for route in distances]
+    etas_response = {"min": min(etas_in_seconds),
+                     "max": max(etas_in_seconds),
+                     "avg": sum(etas_in_seconds)/len(etas_in_seconds)}
+    return json.dumps(etas_response)
 
 
 @app.route('/fares', methods=['GET', 'POST'])
