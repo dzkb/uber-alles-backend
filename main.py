@@ -195,7 +195,7 @@ def handle_accepted_fares_id(fare_id):
                    "carName": "Not Implemented",
                    "carPlateNumber": "Not Implemented"}
 
-        firebase_messaging.send_to_user(fare_data["user_phone"], payload)
+        print(firebase_messaging.send_to_user(fare_data["clientPhone"], payload))
 
         return json.dumps(fare_data)
     elif request.method == "DELETE":
