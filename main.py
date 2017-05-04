@@ -146,11 +146,13 @@ def handle_fares():
             return Response(json.dumps({"error": Responses.NO_DRIVERS}), status=400)
 
         drivers_tokens = [x["registrationToken"] for x in list(drivers_locs.values())]
-        payload = {"fareID": fare_id,
+        payload = {"type": "CMFareRequest",
+                   "fareID": fare_id,
                    "clientPhone": user_phone,
                    "startingPoint": fare_data["startingPoint"],
                    "endingPoint": fare_data["endingPoint"],
                    "startingDate": fare_data["startingDate"]}
+        print(json.dumps(payload))
         firebase_messaging.send_to_many(drivers_tokens, payload)
         response_data = {"id": pushed_data["name"], "requestDate": datetime_now_iso}
 
@@ -174,6 +176,8 @@ def handle_accepted_fares_id(fare_id):
     if fare_data is None:
         return Response(json.dumps({"error": Responses.FARE_NOT_FOUND}), status=404)
 
+    firebase_messaging = messaging.UberMessaging(firebase_messaging_service, firebase_db, user_token)
+
     if request.method == "POST":
         if fare_data["status"] == "in_progress":
             return Response(json.dumps({"error": Responses.FARE_ALREADY_IN_PROGRESS}), status=400)
@@ -183,6 +187,16 @@ def handle_accepted_fares_id(fare_id):
         firebase_db.child("fares").child(fare_id).update(payload, user_token)
 
         fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+
+        payload = {"type": "CMFareConfirmation",
+                   "id": fare_id,
+                   "driverPhone": fare_data["driverPhone"],
+                   "driverName": "Not Implemented",
+                   "carName": "Not Implemented",
+                   "carPlateNumber": "Not Implemented"}
+
+        firebase_messaging.send_to_user(fare_data["user_phone"], payload)
+
         return json.dumps(fare_data)
     elif request.method == "DELETE":
         if fare_data["status"] != "in_progress":
