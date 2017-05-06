@@ -120,8 +120,13 @@ def handle_fares():
     user_phone = request.authorization.username
 
     if request.method == "GET":
-        fare_data = firebase_db.child("fares").get(user_token).val()
-        return json.dumps(fare_data)
+        fare_data_query = firebase_db.child("fares").get(user_token)
+        fares_list = list()
+        for fare_data_item in fare_data_query.each():
+            fare_data = fare_data_item.val()
+            fare_data["id"] = fare_data_item.key()
+            fares_list.append(fare_data)
+        return json.dumps(fares_list)
 
     elif request.method == "POST":
         firebase_messaging = messaging.UberMessaging(firebase_messaging_service, firebase_db, user_token)
@@ -195,7 +200,7 @@ def handle_accepted_fares_id(fare_id):
                    "carName": "Not Implemented",
                    "carPlateNumber": "Not Implemented"}
 
-        print(firebase_messaging.send_to_user(fare_data["clientPhone"], payload))
+        firebase_messaging.send_to_user(fare_data["clientPhone"], payload)
 
         return json.dumps(fare_data)
     elif request.method == "DELETE":
