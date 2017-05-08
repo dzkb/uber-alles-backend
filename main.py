@@ -69,8 +69,8 @@ def handle_arrival_times():
     if user_token is None:
         return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
 
-    customer_latitude = request.args.get('latitude')
-    customer_longitude = request.args.get('longitude')
+    customer_latitude = request.args.get('lat')
+    customer_longitude = request.args.get('lon')
     distance_matrix = GoogleDistanceMatrix.DistanceMatrix(Google.MAPS_API)
 
     try:
