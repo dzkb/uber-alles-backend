@@ -200,7 +200,9 @@ def handle_accepted_fares_id(fare_id):
                    "carName": "Not Implemented",
                    "carPlateNumber": "Not Implemented"}
 
-        firebase_messaging.send_to_user(fare_data["clientPhone"], payload)
+        notification = ("Informacja", "Kierowca zaakcaptował Twój przejazd")
+
+        print(firebase_messaging.send_to_user(fare_data["clientPhone"], payload=payload, notification=notification))
 
         return json.dumps(fare_data)
     elif request.method == "DELETE":
@@ -242,7 +244,36 @@ def handle_accepted_fares():
 @app.route('/completedFares/<fare_id>', methods=['POST'])
 @decorators.content_type(type="application/json")
 def handle_completed_fares(fare_id):
-    return
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if user_token is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
+    user_phone = request.authorization.username
+
+    fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+    if fare_data is None:
+        return Response(json.dumps({"error": Responses.FARE_NOT_FOUND}), status=404)
+
+    if fare_data["status"] == "completed":
+        return Response(json.dumps({"error": Responses.FARE_ALREADY_COMPLETED}), status=401)
+
+    if fare_data["driverPhone"] != user_phone:
+        return Response(json.dumps({"error": Responses.AUTH_NOT_PERMITTED}), status=400)
+
+    firebase_messaging = messaging.UberMessaging(firebase_messaging_service, firebase_db, user_token)
+    fare_data["status"] = "completed"
+
+    firebase_db.child("fares").child(fare_id).update(fare_data, user_token)
+    payload = {"type": "CMFareCompletion",
+               "id": fare_id}
+    notification = ("Przejazd zakończony!", "Dziękujemy za wspólną podróż")
+    firebase_messaging.send_to_user(fare_data["clientPhone"], payload=payload, notification=notification)
+
+    return json.dumps({"status": "ok"})
 
 
 @app.route('/test/messaging', methods=['GET'])
@@ -287,6 +318,7 @@ def handle_localisation():
     localisation_data["registrationToken"] = firebase_messaging.resolve_registration_id(user_phone)
 
     firebase_db.child("localisations").child(user_phone).set(localisation_data, token=user_token)
+    # TODO: send message directly to client
     return json.dumps(localisation_data)
 
 

@@ -6,6 +6,7 @@ class Responses:
     FARE_ALREADY_CANCELLED = "Przejazd został już anulowany"
     FARE_ALREADY_IN_PROGRESS = "Przejazd jest już w trakcie realizacji"
     FARE_CANNOT_CANCEL = "Przejazd nie może być anulowany"
+    FARE_ALREADY_COMPLETED = "Przejazd został już zakończony"
     INPUT_INCORRECT = "Podano niepoprawne dane"
     NO_DRIVERS = "Nie znaleziono kierowcy, który mógłby wykonać przejazd"
     NO_ETAS = "Nie można oszacować czasu przyjazdu"

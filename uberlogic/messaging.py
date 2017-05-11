@@ -5,13 +5,21 @@ class UberMessaging:
         self.db = db_service
         self.user_token = user_token
 
-    def send_to_user(self, recipient_phone, payload):
+    def send_to_user(self, recipient_phone, payload=None, notification=None):
+        title, body = notification
         registration_id = self.resolve_registration_id(recipient_phone)
-        result = self.fcm.notify_single_device(registration_id=registration_id, data_message=payload)
+        result = self.fcm.notify_single_device(registration_id=registration_id,
+                                               data_message=payload,
+                                               message_title=title,
+                                               message_body=body)
         return result
 
-    def send_to_many(self, recipient_ids, payload):
-        result = self.fcm.notify_multiple_devices(registration_ids=recipient_ids, data_message=payload, message_body=payload)
+    def send_to_many(self, recipient_ids, payload=None, notification=None):
+        title, body = notification
+        result = self.fcm.notify_multiple_devices(registration_ids=recipient_ids,
+                                                  data_message=payload,
+                                                  message_title=title,
+                                                  message_body=body)
         return result
 
     def resolve_registration_id(self, phone_number):
