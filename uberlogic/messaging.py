@@ -6,7 +6,9 @@ class UberMessaging:
         self.user_token = user_token
 
     def send_to_user(self, recipient_phone, payload=None, notification=None):
-        title, body = notification
+        title, body = None
+        if notification is not None:
+            title, body = notification
         registration_id = self.resolve_registration_id(recipient_phone)
         result = self.fcm.notify_single_device(registration_id=registration_id,
                                                data_message=payload,
@@ -15,7 +17,9 @@ class UberMessaging:
         return result
 
     def send_to_many(self, recipient_ids, payload=None, notification=None):
-        title, body = notification
+        title, body = None
+        if notification is not None:
+            title, body = notification
         result = self.fcm.notify_multiple_devices(registration_ids=recipient_ids,
                                                   data_message=payload,
                                                   message_title=title,
