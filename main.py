@@ -318,7 +318,27 @@ def handle_localisation():
     localisation_data["registrationToken"] = firebase_messaging.resolve_registration_id(user_phone)
 
     firebase_db.child("localisations").child(user_phone).set(localisation_data, token=user_token)
-    # TODO: send message directly to client
+
+    clients_phones = list()
+    try:
+        drivers_fares = firebase_db.child("fares")\
+            .order_by_child("driverPhone")\
+            .equal_to(user_phone)\
+            .order_by_child("status")\
+            .equal_to("in_progress")\
+            .get(token=user_token).val().values()
+
+        clients_phones = [fare["clientPhone"] for fare in drivers_fares if fare["driverPhone"] == user_phone]
+    except IndexError:
+        pass
+
+    if len(clients_phones) > 0:
+        payload = {"type": "CMLocalisationUpdate",
+                   "driverPhone": user_phone,
+                   "latitude": localisation_data["latitude"],
+                   "longitude": localisation_data["longitude"]}
+        firebase_messaging.send_to_many_by_phones(clients_phones, payload=payload)
+
     return json.dumps(localisation_data)
 
 

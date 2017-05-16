@@ -26,6 +26,10 @@ class UberMessaging:
                                                   message_body=body)
         return result
 
+    def send_to_many_by_phones(self, recipient_phones, payload=None, notification = None):
+        recipient_ids = [self.resolve_registration_id(phone) for phone in recipient_phones]
+        self.send_to_many(recipient_ids, payload=payload, notification=notification)
+
     def resolve_registration_id(self, phone_number):
         registration_id = self.db\
             .child("users")\
