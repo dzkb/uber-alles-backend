@@ -392,11 +392,18 @@ def handler_registration_tokens():
 
     user_phone = request.authorization.username
     registration_token = request.get_json()["registrationToken"]
+    print(request.get_json())
     payload = {"registrationToken": registration_token}
 
     firebase_db.child("users").child(user_phone).update(payload, token=user_token)
 
     return json.dumps({"status": "ok"})
+
+
+@app.route('/adduser', methods=['GET'])
+def handler_adduser():
+    return app.send_static_file('index.html')
+
 
 def authenticate(username, password):
     try:

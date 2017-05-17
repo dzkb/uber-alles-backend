@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</head>
+<body>
+    <script type="text/javascript">
+    function createUser() {
+        console.log("123");
+        var submitButton = document.getElementById("submit");
+
+        submitButton.disabled = true;
+
+        var phoneNumber = document.getElementById("phoneNumber").value;
+        var password = document.getElementById("password").value;
+        var role = document.getElementById("role").value;
+        var firstname = document.getElementById("firstname").value;
+        var lastname = document.getElementById("lastname").value;
+
+        var data = JSON.stringify({
+          "phoneNumber": phoneNumber,
+          "password": password,
+          "firstName": firstname,
+          "lastname": lastname,
+          "role": role
+        });
+
+        var xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener("readystatechange", function () {
+          if (this.readyState === 4) {
+            alert("Użytkownik dodany pomyślnie!");
+            submitButton.disabled = false;
+          }else{
+            alert("Nie działa");
+            submitButton.disabled = false;
+          }
+        });
+
+        xhr.open("POST", "/users");
+        xhr.setRequestHeader("accept", "application/json");
+        xhr.setRequestHeader("content-type", "application/json");
+        xhr.setRequestHeader("cache-control", "no-cache");
+
+        xhr.send(data);
+    }
+
+    </script>
+
+
+    <form class="form-horizontal" onsubmit="return false;">
+    <fieldset>
+
+        <!-- Form Name -->
+    <legend>Stwórz użytkownika</legend>
+
+    <!-- Text input-->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="phoneNumber">Numer telefonu</label>
+      <div class="col-md-4">
+      <input id="phoneNumber" name="phoneNumber" type="text" placeholder="numer" class="form-control input-md" required="">
+
+      </div>
+    </div>
+
+    <!-- Password input-->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="password">Hasło</label>
+      <div class="col-md-4">
+        <input id="password" name="password" type="password" placeholder="hasło" class="form-control input-md">
+
+      </div>
+    </div>
+
+    <!-- Text input-->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="firstname">Imię</label>
+      <div class="col-md-4">
+      <input id="firstname" name="firstname" type="text" placeholder="" class="form-control input-md">
+
+      </div>
+    </div>
+
+    <!-- Text input-->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="lastname">Nazwisko</label>
+      <div class="col-md-4">
+      <input id="lastname" name="lastname" type="text" placeholder="" class="form-control input-md">
+
+      </div>
+    </div>
+
+    <!-- Select Basic -->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="role">Rola</label>
+      <div class="col-md-4">
+        <select id="role" name="role" class="form-control">
+          <option value="customer">Klient</option>
+          <option value="driver">Kierowca</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Button -->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="submit">Stwórz konto</label>
+      <div class="col-md-4">
+        <button type="button" id="submit" name="submit" onclick="createUser()" class="btn btn-primary">💩</button>
+      </div>
+    </div>
+
+
+    </fieldset>
+    </form>
+
+
+</body>
+</html>
