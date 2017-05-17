@@ -379,6 +379,24 @@ def handler_users():
         user = firebase_db.child("users").child(username).get(user_token).val()
         return json.dumps(user)
 
+@app.route('/registrationTokens', methods=['PUT'])
+@decorators.content_type(type="application/json")
+def handler_registration_tokens():
+    if request.authorization is None:
+        return Response(json.dumps({"error": Responses.AUTH_REQUIRED}), status=401)
+
+    user_token = authenticate(request.authorization.username + Firebase_config.USER_DOMAIN,
+                             request.authorization.password)
+    if user_token is None:
+        return Response(json.dumps({"error": Responses.AUTH_ERROR}), status=401)
+
+    user_phone = request.authorization.username
+    registration_token = request.get_json()["registrationToken"]
+    payload = {"registrationToken": registration_token}
+
+    firebase_db.child("users").child(user_phone).update(payload, token=user_token)
+
+    return json.dumps({"status": "ok"})
 
 def authenticate(username, password):
     try:
