@@ -192,13 +192,22 @@ def handle_accepted_fares_id(fare_id):
         firebase_db.child("fares").child(fare_id).update(payload, user_token)
 
         fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+        driver_data = firebase_db.child("users").child(username).get(user_token).val()
+
+        driver_name = driver_data["firstName"] + " " + driver_data["lastName"]
+        try:
+            car_name = driver_data["userdata"]["carName"]
+            car_plate_number = driver_data["userdata"]["carPlateNumber"]
+        except KeyError as e:
+            car_name = "?"
+            car_plate_number = "?"
 
         payload = {"type": "CMFareConfirmation",
                    "id": fare_id,
-                   "driverPhone": fare_data["driverPhone"],
-                   "driverName": "Not Implemented",
-                   "carName": "Not Implemented",
-                   "carPlateNumber": "Not Implemented"}
+                   "driverPhone": username,
+                   "driverName": driver_name,
+                   "carName": car_name,
+                   "carPlateNumber": car_plate_number}
 
         notification = ("Informacja", "Kierowca zaakcaptował Twój przejazd")
 
@@ -264,8 +273,11 @@ def handle_completed_fares(fare_id):
     if fare_data["driverPhone"] != user_phone:
         return Response(json.dumps({"error": Responses.AUTH_NOT_PERMITTED}), status=400)
 
+    fare_cost = request.args.get('cost')
+
     firebase_messaging = messaging.UberMessaging(firebase_messaging_service, firebase_db, user_token)
     fare_data["status"] = "completed"
+    fare_data["cost"] = fare_cost
 
     firebase_db.child("fares").child(fare_id).update(fare_data, user_token)
     payload = {"type": "CMFareCompletion",
