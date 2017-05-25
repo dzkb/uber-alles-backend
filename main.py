@@ -52,8 +52,14 @@ def handle_fares_id(fare_id):
     if fare_data["status"] == "cancelled":
         return Response(json.dumps({"error": Responses.FARE_ALREADY_CANCELLED}), status=400)
 
+    firebase_messaging = messaging.UberMessaging(firebase_messaging_service, firebase_db, user_token)
+
     fare_data["status"] = "cancelled"
     firebase_db.child("fares").child(fare_id).set(fare_data, user_token)
+
+    payload = {"type": "CMFareCancellation", "id": fare_id, "phoneNumber": user_phone, "origin": "customer"}
+    driver_phone = fare_data["driverPhone"]
+    firebase_messaging.send_to_user(driver_phone, payload)
 
     return json.dumps(fare_data)
 
@@ -222,6 +228,10 @@ def handle_accepted_fares_id(fare_id):
         firebase_db.child("fares").child(fare_id).update(payload, user_token)
 
         fare_data = firebase_db.child("fares").child(fare_id).get(user_token).val()
+        client_phone = fare_data["clientPhone"]
+        payload = {"type": "CMFareConfirmation", "id": fare_id, "phoneNumber": username, "origin": "driver"}
+        firebase_messaging.send_to_user(client_phone, payload)
+
         return json.dumps(fare_data)
 
     return "accepted_fares: " + fare_id
