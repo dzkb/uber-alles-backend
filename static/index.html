@@ -14,6 +14,12 @@
 </head>
 <body>
     <script type="text/javascript">
+
+    function textAreaAdjust(o) {
+        o.style.height = "1px";
+        o.style.height = (25+o.scrollHeight)+"px";
+    }
+
     function createUser() {
         console.log("123");
         var submitButton = document.getElementById("submit");
@@ -26,13 +32,22 @@
         var firstname = document.getElementById("firstname").value;
         var lastname = document.getElementById("lastname").value;
 
-        var data = JSON.stringify({
+        var hasUserdata = document.getElementById("hasUserdata").checked;
+        var userdata = JSON.parse(document.getElementById("userdata").value);
+
+        var raw_data = {
           "phoneNumber": phoneNumber,
           "password": password,
           "firstName": firstname,
           "lastname": lastname,
           "role": role
-        });
+        };
+
+        if (hasUserdata) {
+            raw_data["userdata"] = userdata;
+        }
+
+        var data = JSON.stringify(raw_data);
 
         var xhr = new XMLHttpRequest();
         xhr.withCredentials = true;
@@ -108,6 +123,28 @@
           <option value="customer">Klient</option>
           <option value="driver">Kierowca</option>
         </select>
+      </div>
+    </div>
+
+    <!-- Multiple Checkboxes (inline) -->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="hasUserdata">Opcje</label>
+      <div class="col-md-4">
+        <label class="checkbox-inline" for="hasUserdata">
+          <input type="checkbox" name="hasUserdata" id="hasUserdata" onclick="getElementById('userdata').disabled = !getElementById('userdata').disabled" value="true">
+          Dodatkowe dane
+        </label>
+      </div>
+    </div>
+
+    <!-- Textarea -->
+    <div class="form-group">
+      <label class="col-md-4 control-label" for="userdata">Dodatkowe dane</label>
+      <div class="col-md-4">
+        <textarea class="form-control" id="userdata" disabled name="userdata">{
+  "carName": "Ford T",
+  "carPlateNumber": "BI 13369"
+}</textarea>
       </div>
     </div>
 
